@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CURE Protocol</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#050A07; color:#00FF88;
+    font-family: 'Courier New', monospace;
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    user-select:none;
+  }
+  .label { font-size:12px; color:#00FF8877; letter-spacing:3px; margin-bottom:4px;}
+  .tokens { font-size:42px; font-weight:bold; text-shadow:0 0 20px #00FF88; margin-bottom:20px;}
+  .virus {
+    font-size:100px; cursor:pointer;
+    transition:transform 0.1s;
+    margin-bottom:20px;
+  }
+  .virus:active { transform:scale(0.85); }
+  .energy-bar-bg { width:260px; height:10px; background:#00FF8833; border-radius:10px; overflow:hidden; margin-bottom:6px;}
+  .energy-bar-fill { height:100%; background:#00FF88; width:100%; transition:width 0.3s; }
+  .energy-text { font-size:12px; color:#00FF8877; margin-bottom:30px;}
+  .float { position:fixed; font-size:22px; font-weight:bold; color:#00FF88; pointer-events:none; animation:up 1s ease-out forwards; }
+  @keyframes up { from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-70px);} }
+</style>
+</head>
+<body>
+
+<div class="label">💊 CURE TOKENS</div>
+<div class="tokens" id="tokens">1000</div>
+
+<div class="virus" id="virusBtn" onclick="tap(event)">🦠</div>
+
+<div class="energy-bar-bg"><div class="energy-bar-fill" id="energyBar"></div></div>
+<div class="energy-text" id="energyText">500 / 500 Energy</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) tg.expand();
+
+  const userId = tg?.initDataUnsafe?.user?.id || 'guest';
+  let tokens = 1000;
+  let energy = 500;
+  let maxEnergy = 500;
+
+  fetch('/api/user/' + userId)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.error) {
+        tokens = data.tokens;
+        energy = data.energy;
+        maxEnergy = data.maxEnergy;
+        updateUI();
+      }
+    })
+    .catch(() => {});
+
+  function tap(e) {
+    if (energy <= 0) return;
+
+    fetch('/api/tap/' + userId, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        tokens = data.tokens;
+        energy = data.energy;
+        updateUI();
+      });
+
+    const f = document.createElement('div');
+    f.className = 'float';
+    f.textContent = '+1';
+    f.style.left = (e.clientX - 10) + 'px';
+    f.style.top = (e.clientY - 20) + 'px';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1000);
+  }
+
+  function updateUI() {
+    document.getElementById('tokens').textContent = tokens.toLocaleString();
+    document.getElementById('energyText').textContent = energy + ' / ' + maxEnergy + ' Energy';
+    document.getElementById('energyBar').style.width = (energy/maxEnergy*100) + '%';
+  }
+</script>
+</body>
+  </html>
