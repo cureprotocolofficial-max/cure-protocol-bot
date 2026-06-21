@@ -1,0 +1,16 @@
+{
+  "name": "cure-protocol-bot",
+  "version": "1.0.0",
+  "description": "CURE Protocol Telegram Mini Game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.64.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
