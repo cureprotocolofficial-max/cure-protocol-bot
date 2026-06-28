@@ -2,51 +2,196 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CURE Protocol</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  :root {
+    --green:#00FF88; --green-dim:#00FF8833; --green-mid:#00FF8877;
+    --bg:#050A07; --card:#0A1A0F;
+  }
+
   body {
-    background:#050A07; color:#00FF88;
-    font-family: 'Courier New', monospace;
-    min-height:100vh; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; text-align:center;
-    user-select:none;
+    background:var(--bg); color:var(--green);
+    font-family:'Rajdhani', sans-serif;
+    min-height:100vh; overflow-x:hidden; user-select:none;
+    display:flex; flex-direction:column;
   }
-  .label { font-size:12px; color:#00FF8877; letter-spacing:3px; margin-bottom:4px;}
-  .tokens { font-size:42px; font-weight:bold; text-shadow:0 0 20px #00FF88; margin-bottom:20px;}
-  .virus {
-    font-size:100px; cursor:pointer;
-    transition:transform 0.1s;
-    margin-bottom:20px;
+
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:
+      linear-gradient(var(--green-dim) 1px, transparent 1px),
+      linear-gradient(90deg, var(--green-dim) 1px, transparent 1px);
+    background-size:40px 40px; opacity:0.25; pointer-events:none; z-index:0;
   }
-  .virus:active { transform:scale(0.85); }
-  .energy-bar-bg { width:260px; height:10px; background:#00FF8833; border-radius:10px; overflow:hidden; margin-bottom:6px;}
-  .energy-bar-fill { height:100%; background:#00FF88; width:100%; transition:width 0.3s; }
-  .energy-text { font-size:12px; color:#00FF8877; margin-bottom:30px;}
-  .float { position:fixed; font-size:22px; font-weight:bold; color:#00FF88; pointer-events:none; animation:up 1s ease-out forwards; }
-  @keyframes up { from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-70px);} }
+
+  .top-bar {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 16px; position:relative; z-index:1;
+  }
+  .player-name { font-family:'Orbitron',monospace; font-size:12px; }
+  .player-level { font-size:11px; color:var(--green-mid); }
+  .rank-badge {
+    background:var(--green-dim); border:1px solid var(--green);
+    border-radius:20px; padding:5px 12px; font-family:'Orbitron',monospace; font-size:10px;
+  }
+
+  .token-display { text-align:center; padding:10px; position:relative; z-index:1; }
+  .token-label { font-size:11px; color:var(--green-mid); letter-spacing:3px; }
+  .token-amount {
+    font-family:'Orbitron',monospace; font-size:38px; font-weight:900;
+    text-shadow:0 0 20px var(--green); animation:glow 2s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%,100%{text-shadow:0 0 20px var(--green);}
+    50%{text-shadow:0 0 35px var(--green),0 0 55px var(--green-mid);}
+  }
+  .token-sub { font-size:12px; color:var(--green-mid); margin-top:2px; }
+
+  .virus-area {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:1; padding:10px;
+  }
+  .ring-outer {
+    position:absolute; width:260px; height:260px; border-radius:50%;
+    border:1px solid var(--green-dim); animation:spin 8s linear infinite;
+  }
+  .ring-inner {
+    position:absolute; width:220px; height:220px; border-radius:50%;
+    border:1px dashed var(--green-dim); animation:spin 5s linear infinite reverse;
+  }
+  @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  .virus-btn {
+    width:190px; height:190px; border-radius:50%;
+    background:radial-gradient(circle at 40% 40%, #1a4a2a, #050A07);
+    border:3px solid var(--green);
+    box-shadow:0 0 30px var(--green-mid), inset 0 0 30px #00FF8811;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:6px; position:relative;
+    transition:transform 0.1s; cursor:pointer;
+  }
+  .virus-btn:active { transform:scale(0.92); }
+  .virus-emoji { font-size:64px; animation:float 3s ease-in-out infinite; }
+  @keyframes float {
+    0%,100%{transform:translateY(0) rotate(-5deg);}
+    50%{transform:translateY(-8px) rotate(5deg);}
+  }
+  .tap-text { font-family:'Orbitron',monospace; font-size:10px; color:var(--green-mid); letter-spacing:2px; }
+
+  .float-text {
+    position:fixed; font-family:'Orbitron',monospace; font-size:20px; font-weight:900;
+    color:var(--green); text-shadow:0 0 10px var(--green); pointer-events:none;
+    animation:up 1s ease-out forwards; z-index:999;
+  }
+  @keyframes up { from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-80px);} }
+
+  .splat {
+    position:fixed; width:14px; height:14px; border-radius:50%;
+    background:var(--green); pointer-events:none;
+    animation:splat 0.5s ease-out forwards; z-index:998;
+  }
+  @keyframes splat {
+    0%{opacity:1; transform:scale(0);}
+    50%{opacity:0.8; transform:scale(1);}
+    100%{opacity:0; transform:scale(2);}
+  }
+
+  .energy-section { padding:0 20px 18px; position:relative; z-index:1; }
+  .energy-header { display:flex; justify-content:space-between; font-size:12px; color:var(--green-mid); margin-bottom:6px; }
+  .energy-bg { height:9px; background:var(--green-dim); border-radius:10px; overflow:hidden; border:1px solid var(--green-dim); }
+  .energy-fill { height:100%; background:linear-gradient(90deg,var(--green),#00FF88aa); border-radius:10px; box-shadow:0 0 10px var(--green); transition:width 0.3s; }
+
+  .bottom-nav {
+    display:flex; background:var(--card); border-top:1px solid var(--green-dim);
+    padding:10px 0 14px; position:relative; z-index:1;
+  }
+  .nav-btn {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color:var(--green-mid); font-family:'Rajdhani',sans-serif;
+    font-size:10px; letter-spacing:1px;
+  }
+  .nav-btn.active { color:var(--green); }
+  .nav-icon { font-size:20px; }
+
+  .toast {
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+    background:var(--card); border:1px solid var(--green); border-radius:30px;
+    padding:10px 20px; font-size:13px; color:var(--green); z-index:1000;
+    opacity:0; transition:opacity 0.3s; white-space:nowrap;
+  }
+  .toast.show { opacity:1; }
+
+  .loading {
+    position:fixed; inset:0; background:var(--bg); z-index:2000;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  }
+  .loading .virus-emoji { font-size:60px; }
+  .loading-text { font-family:'Orbitron',monospace; font-size:13px; letter-spacing:3px; color:var(--green-mid); }
 </style>
 </head>
 <body>
 
-<div class="label">💊 CURE TOKENS</div>
-<div class="tokens" id="tokens">1000</div>
+<div class="loading" id="loading">
+  <div class="virus-emoji">🦠</div>
+  <div class="loading-text">LOADING CURE PROTOCOL...</div>
+</div>
 
-<div class="virus" id="virusBtn" onclick="tap(event)">🦠</div>
+<div class="toast" id="toast"></div>
 
-<div class="energy-bar-bg"><div class="energy-bar-fill" id="energyBar"></div></div>
-<div class="energy-text" id="energyText">500 / 500 Energy</div>
+<div class="top-bar">
+  <div>
+    <div class="player-name" id="playerName">WARRIOR</div>
+    <div class="player-level" id="playerLevel">⚡ Level 1</div>
+  </div>
+  <div class="rank-badge">💊 CURE PROTOCOL</div>
+</div>
+
+<div class="token-display">
+  <div class="token-label">💊 CURE TOKENS</div>
+  <div class="token-amount" id="tokenAmount">0</div>
+  <div class="token-sub" id="tapPowerText">+1 per tap</div>
+</div>
+
+<div class="virus-area">
+  <div class="ring-outer"></div>
+  <div class="ring-inner"></div>
+  <div class="virus-btn" id="virusBtn">
+    <div class="virus-emoji">🦠</div>
+    <div class="tap-text">TAP TO DESTROY</div>
+  </div>
+</div>
+
+<div class="energy-section">
+  <div class="energy-header">
+    <span>⚡ ENERGY</span>
+    <span id="energyText">500 / 500</span>
+  </div>
+  <div class="energy-bg"><div class="energy-fill" id="energyFill" style="width:100%"></div></div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active"><span class="nav-icon">🦠</span><span>DESTROY</span></button>
+  <button class="nav-btn" onclick="comingSoon()"><span class="nav-icon">⚡</span><span>UPGRADE</span></button>
+  <button class="nav-btn" onclick="comingSoon()"><span class="nav-icon">🏆</span><span>RANKS</span></button>
+  <button class="nav-btn" onclick="comingSoon()"><span class="nav-icon">👥</span><span>FRIENDS</span></button>
+</div>
 
 <script>
   const tg = window.Telegram?.WebApp;
-  if (tg) tg.expand();
+  if (tg) { tg.expand(); tg.ready(); }
 
-  const userId = tg?.initDataUnsafe?.user?.id || 'guest';
-  let tokens = 1000;
-  let energy = 500;
-  let maxEnergy = 500;
+  const user = tg?.initDataUnsafe?.user;
+  const userId = user?.id || 'guest';
+  const firstName = user?.first_name || 'Warrior';
+
+  let tokens = 0, energy = 500, maxEnergy = 500, tapPower = 1, level = 1;
+
+  document.getElementById('playerName').textContent = firstName.toUpperCase();
 
   fetch('/api/user/' + userId)
     .then(r => r.json())
@@ -55,13 +200,20 @@
         tokens = data.tokens;
         energy = data.energy;
         maxEnergy = data.maxEnergy;
+        tapPower = data.tapPower;
+        level = data.level;
         updateUI();
       }
     })
-    .catch(() => {});
+    .finally(() => {
+      document.getElementById('loading').style.display = 'none';
+    });
 
-  function tap(e) {
-    if (energy <= 0) return;
+  document.getElementById('virusBtn').addEventListener('click', function(e) {
+    if (energy <= 0) {
+      showToast('⚡ Out of energy! Wait for it to refill.');
+      return;
+    }
 
     fetch('/api/tap/' + userId, { method: 'POST' })
       .then(r => r.json())
@@ -71,20 +223,60 @@
         updateUI();
       });
 
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX || (rect.left + rect.width/2);
+    const y = e.clientY || (rect.top + rect.height/2);
+
     const f = document.createElement('div');
-    f.className = 'float';
-    f.textContent = '+1';
-    f.style.left = (e.clientX - 10) + 'px';
-    f.style.top = (e.clientY - 20) + 'px';
+    f.className = 'float-text';
+    f.textContent = '+' + tapPower;
+    f.style.left = (x - 12) + 'px';
+    f.style.top = (y - 20) + 'px';
     document.body.appendChild(f);
     setTimeout(() => f.remove(), 1000);
-  }
+
+    for (let i = 0; i < 3; i++) {
+      const s = document.createElement('div');
+      s.className = 'splat';
+      s.style.left = (x + (Math.random()-0.5)*40 - 7) + 'px';
+      s.style.top = (y + (Math.random()-0.5)*40 - 7) + 'px';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 500);
+    }
+
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  });
 
   function updateUI() {
-    document.getElementById('tokens').textContent = tokens.toLocaleString();
-    document.getElementById('energyText').textContent = energy + ' / ' + maxEnergy + ' Energy';
-    document.getElementById('energyBar').style.width = (energy/maxEnergy*100) + '%';
+    document.getElementById('tokenAmount').textContent = tokens.toLocaleString();
+    document.getElementById('tapPowerText').textContent = '+' + tapPower + ' per tap';
+    document.getElementById('playerLevel').textContent = '⚡ Level ' + level;
+    document.getElementById('energyText').textContent = energy + ' / ' + maxEnergy;
+    document.getElementById('energyFill').style.width = (energy/maxEnergy*100) + '%';
   }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function comingSoon() {
+    showToast('🚀 Coming soon, Warrior!');
+  }
+
+  setInterval(() => {
+    fetch('/api/user/' + userId)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) {
+          energy = data.energy;
+          maxEnergy = data.maxEnergy;
+          updateUI();
+        }
+      });
+  }, 5000);
 </script>
 </body>
-  </html>
+</html>
